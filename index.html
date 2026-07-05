@@ -1,0 +1,1823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Coal LLC Calculator | High-Precision Idle Calculator</title>
+  <meta name="description" content="An elegant, high-precision equipment calculator for Coal LLC. Supports standard numbers, suffix notations (Million, Billion), alphabetical abbreviations (aa, ab), and massive scientific notation exponents (e.g., e400) using arbitrary-precision math.">
+  <meta name="theme-color" content="#120f0d">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    /* -------------------------------------------------------------
+       1. CSS CUSTOM PROPERTIES & THEME TOKENS
+       ------------------------------------------------------------- */
+    :root {
+      /* Shared Colors */
+      --bg-dark: hsl(20, 20%, 6%);
+      --bg-card: rgba(20, 16, 14, 0.75);
+      --bg-card-border: rgba(255, 255, 255, 0.05);
+      --bg-card-border-top: rgba(255, 255, 255, 0.1);
+      
+      --text-main: hsl(0, 0%, 94%);
+      --text-muted: hsl(20, 10%, 65%);
+      --text-dim: hsl(20, 10%, 45%);
+      
+      /* Miner Theme (Amber/Orange) - Default Active */
+      --miner-hue: 24;
+      --miner-color: hsl(var(--miner-hue), 95%, 52%);
+      --miner-color-hover: hsl(var(--miner-hue), 95%, 60%);
+      --miner-glow: rgba(243, 112, 33, 0.4);
+      --miner-bg-glow: rgba(243, 112, 33, 0.08);
+      
+      /* Collector Theme (Cyan) */
+      --collector-hue: 188;
+      --collector-color: hsl(var(--collector-hue), 90%, 50%);
+      --collector-color-hover: hsl(var(--collector-hue), 90%, 58%);
+      --collector-glow: rgba(31, 211, 243, 0.4);
+      --collector-bg-glow: rgba(31, 211, 243, 0.08);
+
+      /* Active Dynamic Variables (Controlled by JS/Classes) */
+      --theme-hue: var(--miner-hue);
+      --theme-color: var(--miner-color);
+      --theme-color-hover: var(--miner-color-hover);
+      --theme-glow: var(--miner-glow);
+      --theme-bg-glow: var(--miner-bg-glow);
+      
+      /* Font stacks */
+      --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+
+      /* Transitions */
+      --transition-fast: 0.15s ease;
+      --transition-normal: 0.3s ease;
+      --transition-slow: 0.5s ease;
+      
+      color-scheme: dark;
+    }
+
+    /* Target Collector active styles */
+    .theme-collector {
+      --theme-hue: var(--collector-hue);
+      --theme-color: var(--collector-color);
+      --theme-color-hover: var(--collector-color-hover);
+      --theme-glow: var(--collector-glow);
+      --theme-bg-glow: var(--collector-bg-glow);
+    }
+
+    /* -------------------------------------------------------------
+       2. RESET & BASE STYLES
+       ------------------------------------------------------------- */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 50% 25%, hsl(var(--theme-hue), 25%, 12%) 0%, hsl(20, 20%, 5%) 80%),
+        radial-gradient(circle at 10% 80%, rgba(20, 20, 25, 0.5) 0%, transparent 50%),
+        radial-gradient(circle at 90% 80%, rgba(30, 15, 10, 0.4) 0%, transparent 50%);
+      background-attachment: fixed;
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 20px;
+      overflow-x: hidden;
+      line-height: 1.5;
+      transition: background var(--transition-slow);
+    }
+
+    /* Scrollbars */
+    @supports (scrollbar-color: auto) {
+      body {
+        --scrollbar-thumb: hsl(var(--theme-hue), 40%, 25%);
+        --scrollbar-track: hsl(20, 20%, 6%);
+        scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+        scrollbar-width: thin;
+      }
+    }
+
+    @supports not (scrollbar-color: auto) {
+      body::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      body::-webkit-scrollbar-track {
+        background: hsl(20, 20%, 6%);
+      }
+      body::-webkit-scrollbar-thumb {
+        background: hsl(var(--theme-hue), 40%, 25%);
+        border-radius: 4px;
+      }
+      body::-webkit-scrollbar-thumb:hover {
+        background: hsl(var(--theme-hue), 50%, 35%);
+      }
+    }
+
+    /* -------------------------------------------------------------
+       3. LAYOUT & CONTAINER
+       ------------------------------------------------------------- */
+    .container {
+      width: 100%;
+      max-width: 840px;
+      margin: 40px auto;
+      position: relative;
+      z-index: 10;
+    }
+
+    /* Ambient Glow background blobs */
+    .ambient-glow {
+      position: absolute;
+      width: 450px;
+      height: 450px;
+      background: var(--theme-bg-glow);
+      filter: blur(120px);
+      border-radius: 50%;
+      top: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: none;
+      z-index: 1;
+      transition: background var(--transition-slow);
+    }
+
+    /* -------------------------------------------------------------
+       4. HEADER STYLE
+       ------------------------------------------------------------- */
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+      z-index: 10;
+      position: relative;
+    }
+
+    .logo-container {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .logo-icon {
+      width: 42px;
+      height: 42px;
+      fill: var(--theme-color);
+      filter: drop-shadow(0 0 10px var(--theme-glow));
+      transition: fill var(--transition-normal), filter var(--transition-normal);
+    }
+
+    h1 {
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #ffffff 30%, hsl(var(--theme-hue), 20%, 75%) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      display: inline-block;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 16px;
+      font-weight: 400;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+
+    /* -------------------------------------------------------------
+       5. PREMIUM GLASS CARDS
+       ------------------------------------------------------------- */
+    .glass-card {
+      background: var(--bg-card);
+      border: 1px solid var(--bg-card-border);
+      border-top: 1px solid var(--bg-card-border-top);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-radius: 24px;
+      box-shadow: 
+        0 4px 30px rgba(0, 0, 0, 0.4),
+        0 1px 0px rgba(255, 255, 255, 0.05) inset,
+        0 20px 50px rgba(0, 0, 0, 0.6);
+      padding: 32px;
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color var(--transition-normal);
+    }
+
+    .glass-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+    }
+
+    /* -------------------------------------------------------------
+       6. INPUT FORM STYLING
+       ------------------------------------------------------------- */
+    .form-group {
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    .input-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    label {
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+    }
+
+    .cost-badge {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      color: var(--theme-color);
+      transition: color var(--transition-normal);
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 20px;
+      width: 22px;
+      height: 22px;
+      fill: var(--text-dim);
+      transition: fill var(--transition-fast);
+      pointer-events: none;
+    }
+
+    .money-input {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.45);
+      border: 2px solid rgba(255, 255, 255, 0.06);
+      border-radius: 16px;
+      padding: 16px 20px 16px 54px;
+      font-size: 22px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-weight: 500;
+      outline: none;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+
+    .money-input:focus {
+      border-color: var(--theme-color);
+      box-shadow: 
+        inset 0 2px 4px rgba(0,0,0,0.4),
+        0 0 16px var(--theme-bg-glow);
+    }
+
+    .money-input:focus + .input-icon {
+      fill: var(--theme-color);
+    }
+
+    .money-input::placeholder {
+      color: var(--text-dim);
+    }
+
+    /* Helper presets grid */
+    .presets-container {
+      margin-top: 14px;
+    }
+
+    .presets-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+
+    .presets-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .preset-btn {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      user-select: none;
+      transition: 
+        background-color var(--transition-fast),
+        color var(--transition-fast),
+        border-color var(--transition-fast),
+        transform var(--transition-fast);
+    }
+
+    .preset-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.15);
+      transform: translateY(-1px);
+    }
+
+    .preset-btn:active {
+      transform: translateY(0);
+    }
+
+    .preset-btn.highlight {
+      background: var(--theme-bg-glow);
+      color: var(--theme-color);
+      border-color: rgba(var(--theme-color), 0.2);
+    }
+
+    .preset-btn.highlight:hover {
+      background: rgba(var(--theme-color), 0.15);
+      border-color: var(--theme-color);
+    }
+
+    /* Live parser output overlay */
+    .parser-feedback {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 20px;
+    }
+
+    .parser-feedback.error {
+      color: hsl(0, 85%, 60%);
+    }
+
+    .parser-label {
+      font-weight: 600;
+      color: var(--text-dim);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .parser-value {
+      font-family: var(--font-mono);
+      font-weight: 500;
+      color: #fff;
+    }
+
+    /* -------------------------------------------------------------
+       7. PURCHASE MODE SELECTION (TAB SLIDER)
+       ------------------------------------------------------------- */
+    .tab-group {
+      display: flex;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 16px;
+      padding: 6px;
+      position: relative;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      margin-bottom: 32px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      padding: 14px;
+      font-family: var(--font-sans);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      z-index: 2;
+      transition: color var(--transition-normal);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      text-transform: uppercase;
+    }
+
+    .tab-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: currentColor;
+      transition: transform var(--transition-normal);
+    }
+
+    .tab-btn:hover {
+      color: #fff;
+    }
+
+    .tab-btn:hover svg {
+      transform: scale(1.1);
+    }
+
+    .tab-btn.active {
+      color: #fff;
+    }
+
+    .tab-btn.active svg {
+      fill: #fff;
+    }
+
+    .tab-slider {
+      position: absolute;
+      top: 6px;
+      bottom: 6px;
+      left: 6px;
+      width: calc(50% - 6px);
+      background: var(--theme-color);
+      border-radius: 12px;
+      transition: transform var(--transition-normal), background-color var(--transition-normal);
+      box-shadow: 0 4px 20px var(--theme-glow);
+      z-index: 1;
+    }
+
+    .theme-collector .tab-slider {
+      transform: translateX(100%);
+    }
+
+    /* -------------------------------------------------------------
+       8. RESULTS AREA (SPLIT GRID COMPARISON)
+       ------------------------------------------------------------- */
+    .results-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 640px) {
+      .results-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .result-card {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      border-radius: 18px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      transition: 
+        border-color var(--transition-normal),
+        box-shadow var(--transition-normal),
+        transform var(--transition-normal),
+        background-color var(--transition-normal);
+    }
+
+    .result-card.active-target {
+      background: rgba(var(--card-hue-color), 0.03);
+      border-color: rgba(var(--card-theme-color), 0.25);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), inset 0 0 15px rgba(var(--card-theme-color), 0.05);
+    }
+
+    .result-card.miner-card {
+      --card-theme-color: var(--miner-color);
+      --card-hue-color: 243, 112, 33;
+    }
+
+    .result-card.collector-card {
+      --card-theme-color: var(--collector-color);
+      --card-hue-color: 31, 211, 243;
+    }
+
+    .result-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .result-title {
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .result-title svg {
+      width: 18px;
+      height: 18px;
+      fill: var(--text-muted);
+    }
+
+    .active-target .result-title {
+      color: var(--card-theme-color);
+    }
+
+    .active-target .result-title svg {
+      fill: var(--card-theme-color);
+    }
+
+    .target-badge {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      background: var(--card-theme-color);
+      color: #000;
+      padding: 2px 8px;
+      border-radius: 4px;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity var(--transition-normal), transform var(--transition-normal);
+    }
+
+    .active-target .target-badge {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .result-value-container {
+      margin-bottom: 12px;
+      position: relative;
+    }
+
+    .result-value {
+      font-size: 32px;
+      font-weight: 800;
+      color: #fff;
+      font-family: var(--font-mono);
+      line-height: 1.1;
+      word-wrap: break-word;
+      word-break: break-all;
+      letter-spacing: -0.5px;
+    }
+
+    .result-value.zero {
+      color: var(--text-dim);
+    }
+
+    .result-suffix-note {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      font-weight: 500;
+    }
+
+    .result-divider {
+      height: 1px;
+      background: rgba(255, 255, 255, 0.05);
+      margin: 16px 0;
+    }
+
+    .remainder-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: auto;
+    }
+
+    .remainder-label {
+      font-size: 12px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .remainder-value {
+      font-family: var(--font-mono);
+      font-size: 15px;
+      color: var(--text-muted);
+      word-wrap: break-word;
+      word-break: break-all;
+    }
+
+    /* Copy Actions */
+    .copy-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      color: var(--text-muted);
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition-fast);
+    }
+
+    .copy-btn svg {
+      width: 16px;
+      height: 16px;
+      fill: currentColor;
+    }
+
+    .copy-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .copy-btn:active {
+      transform: scale(0.95);
+    }
+
+    .copy-btn.success {
+      background: rgba(40, 199, 111, 0.12);
+      border-color: rgba(40, 199, 111, 0.3);
+      color: #28c76f;
+    }
+
+    /* -------------------------------------------------------------
+       9. INFO / EXPLANATION ACCORDION
+       ------------------------------------------------------------- */
+    .accordion-card {
+      margin-bottom: 24px;
+    }
+
+    .accordion-header {
+      width: 100%;
+      background: none;
+      border: none;
+      text-align: left;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      padding: 4px 0;
+      outline: none;
+    }
+
+    .accordion-title {
+      font-size: 15px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .accordion-title svg {
+      width: 20px;
+      height: 20px;
+      fill: var(--theme-color);
+      transition: fill var(--transition-normal);
+    }
+
+    .accordion-trigger {
+      width: 20px;
+      height: 20px;
+      fill: var(--text-dim);
+      transition: transform var(--transition-normal);
+    }
+
+    .accordion-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height var(--transition-normal) ease-out;
+    }
+
+    .accordion-content-inner {
+      padding-top: 20px;
+      font-size: 14px;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .accordion-content.expanded {
+      max-height: 1000px;
+    }
+
+    .accordion-content.expanded + .accordion-header .accordion-trigger {
+      transform: rotate(180deg);
+    }
+
+    .accordion-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 580px) {
+      .accordion-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .accordion-item {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.02);
+    }
+
+    .accordion-item h4 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .accordion-item p {
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .accordion-item ul {
+      list-style-type: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 6px;
+    }
+
+    .accordion-item li {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 4px 8px;
+      border-radius: 6px;
+      border-left: 3px solid var(--theme-color);
+      display: flex;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: background-color var(--transition-fast), border-left-color var(--transition-normal);
+    }
+
+    .accordion-item li:hover {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .accordion-item li span.lbl {
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .accordion-item li span.val {
+      color: var(--text-muted);
+    }
+
+    /* -------------------------------------------------------------
+       10. DIAGNOSTICS & SYSTEM FOOTER
+       ------------------------------------------------------------- */
+    .system-footer {
+      width: 100%;
+      text-align: center;
+      margin-top: auto;
+      padding-top: 40px;
+      border-top: 1px solid rgba(255, 255, 255, 0.03);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .diagnostic-panel {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      padding: 16px;
+      border-radius: 12px;
+      text-align: left;
+      max-width: 500px;
+      margin: 0 auto;
+      display: none;
+    }
+
+    .diagnostic-panel.visible {
+      display: block;
+    }
+
+    .diagnostic-header {
+      font-weight: 700;
+      color: #28c76f;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      padding-bottom: 6px;
+    }
+
+    .diagnostic-tests {
+      max-height: 150px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .diagnostic-test-item {
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-muted);
+    }
+
+    .diagnostic-test-item.pass {
+      color: hsl(140, 60%, 65%);
+    }
+
+    .diagnostic-test-item.fail {
+      color: hsl(0, 80%, 65%);
+    }
+
+    .footer-links {
+      font-size: 13px;
+      color: var(--text-dim);
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .footer-link-btn {
+      background: none;
+      border: none;
+      color: inherit;
+      font-family: inherit;
+      font-size: inherit;
+      cursor: pointer;
+      text-decoration: underline;
+      transition: color var(--transition-fast);
+    }
+
+    .footer-link-btn:hover {
+      color: var(--theme-color);
+    }
+
+    /* -------------------------------------------------------------
+       11. MICRO-ANIMATIONS & TOASTS
+       ------------------------------------------------------------- */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translate(-50%, 100px);
+      background: #1e1e1e;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-left: 4px solid #28c76f;
+      padding: 12px 24px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #fff;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+    }
+
+    .toast.visible {
+      transform: translate(-50%, 0);
+      opacity: 1;
+    }
+
+    .toast svg {
+      width: 18px;
+      height: 18px;
+      fill: #28c76f;
+    }
+
+    /* Pulse glow keyframes for premium experience */
+    @keyframes pulse-glow {
+      0% {
+        box-shadow: 0 0 10px var(--theme-glow);
+      }
+      50% {
+        box-shadow: 0 0 25px var(--theme-glow);
+      }
+      100% {
+        box-shadow: 0 0 10px var(--theme-glow);
+      }
+    }
+
+    .glow-pulse-focus:focus {
+      animation: pulse-glow 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="theme-miner">
+
+  <!-- Ambient Glow effect -->
+  <div class="ambient-glow" id="ambient-glow"></div>
+
+  <div class="container">
+    
+    <!-- HEADER -->
+    <header>
+      <div class="logo-container">
+        <!-- Pickaxe SVG logo -->
+        <svg class="logo-icon" viewBox="0 0 512 512" id="header-logo">
+          <!-- Default pickaxe path -->
+          <path d="M472.4 72c-11.3-11.3-28.2-13.7-42.4-7.2L382.9 83.4c-9 4.1-15.6 11.8-18 21.1L351.1 157c-2 7.7.3 15.9 6.1 21.6l46.2 46.2c5.7 5.7 13.9 8 21.6 6.1l52.5-13.8c9.3-2.4 17-9 21.1-18l18.6-47.1c6.5-14.2 4-31.1-7.3-42.4L472.4 72zM251.6 288.4L24 512h27.3L277 259l-25.4-20.6z"/>
+        </svg>
+        <h1>Coal LLC</h1>
+      </div>
+      <p>Precision Equipment & Employee Purchase Calculator</p>
+    </header>
+
+    <main>
+      
+      <!-- MAIN CALCULATOR CARD -->
+      <div class="glass-card">
+        
+        <!-- MONEY INPUT FORM -->
+        <div class="form-group">
+          <div class="input-label-row">
+            <label for="money-input">Current Capital ($)</label>
+            <div class="cost-badge" id="cost-badge">Miner Cost: 262,500</div>
+          </div>
+          <div class="input-wrapper">
+            <!-- Dollar sign icon -->
+            <svg class="input-icon" viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-1.07c-1.39-.17-2.9-.85-3.76-1.78l1.42-1.42c.62.61 1.7.19 1.7-1.73V11h-2v-2h2V7.93c-1.39-.17-2.9-.85-3.76-1.78l1.42-1.42c.62.61 1.7.19 1.7-1.73V3h2v1.07c1.39.17 2.9.85 3.76 1.78l-1.42 1.42c-.62-.61-1.7-.19-1.7 1.73V13h2v2h-2v1.07z" style="display:none;"/>
+              <path d="M15 15H11.5V13.5H13.5C14.33 13.5 15 12.83 15 12V10C15 9.17 14.33 8.5 13.5 8.5H11.5V7H9.5V8.5H9C8.45 8.5 8 8.95 8 9.5V10.5C8 11.05 8.45 11.5 9 11.5H12.5V13H10.5C9.67 13 9 13.67 9 14.5V16.5C9 17.05 9.45 17.5 10 17.5H10.5V19H12.5V17.5H13C13.55 17.5 14 17.05 14 16.5V15.5C14 15 13.55 15 13 15Z" style="display:none;"/>
+              <!-- Custom high quality SVG Dollar Sign -->
+              <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1.25 15.08A2.88 2.88 0 0 1 11.5 17v1.5a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5V17a3.52 3.52 0 0 1-2.45-1.57.5.5 0 0 1 .08-.69l.75-.58a.5.5 0 0 1 .67.07 2 2 0 0 0 1.45.72 1.21 1.21 0 0 0 1.25-1.22c0-.79-.6-1.07-1.63-1.37-1.38-.41-2.87-.85-2.87-2.61a2.82 2.82 0 0 1 2.25-2.66V5.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1.52a2.83 2.83 0 0 1 2 .87.5.5 0 0 1-.07.72l-.71.57a.5.5 0 0 1-.68-.06 1.48 1.48 0 0 0-1-.48 1.13 1.13 0 0 0-1.12 1.16c0 .73.53.98 1.5 1.27s3 .87 3 2.68c0 1.46-1.15 2.5-2.58 2.62z"/>
+            </svg>
+            <input 
+              type="text" 
+              id="money-input" 
+              class="money-input glow-pulse-focus" 
+              placeholder="e.g. 1.54M, 1e400, 2.625e5" 
+              autocomplete="off" 
+              autofocus>
+          </div>
+
+          <!-- Suffix presets helper panel -->
+          <div class="presets-container">
+            <div class="presets-title">Quick Suffixes & Scientific Presets</div>
+            <div class="presets-grid" id="presets-grid">
+              <!-- Dynamically populated to match theme-color easily -->
+            </div>
+          </div>
+
+          <!-- Instant parsed feedback -->
+          <div class="parser-feedback" id="parser-feedback">
+            <span class="parser-label">Parsed Capital:</span>
+            <span class="parser-value" id="parsed-value">0</span>
+          </div>
+        </div>
+
+        <!-- TOGGLE TARGET MODE (SLIDING TAB SELECTOR) -->
+        <div class="tab-group">
+          <div class="tab-slider" id="tab-slider"></div>
+          <button class="tab-btn active" id="tab-miner">
+            <svg viewBox="0 0 512 512">
+              <path d="M472.4 72c-11.3-11.3-28.2-13.7-42.4-7.2L382.9 83.4c-9 4.1-15.6 11.8-18 21.1L351.1 157c-2 7.7.3 15.9 6.1 21.6l46.2 46.2c5.7 5.7 13.9 8 21.6 6.1l52.5-13.8c9.3-2.4 17-9 21.1-18l18.6-47.1c6.5-14.2 4-31.1-7.3-42.4L472.4 72zM251.6 288.4L24 512h27.3L277 259l-25.4-20.6z"/>
+            </svg>
+            Miners
+          </button>
+          <button class="tab-btn" id="tab-collector">
+            <svg viewBox="0 0 512 512">
+              <!-- Collector magnet/funnel svg -->
+              <path d="M128 32C110.3 32 96 46.3 96 64v384c0 17.7 14.3 32 32 32h256c17.7 0 32-14.3 32-32V64c0-17.7-14.3-32-32-32H128zm192 128H192v-32h128v32zm0 96H192v-32h128v32zm-32 96h-64v-32h64v32z" style="display:none;"/>
+              <!-- Elegant Magnet Icon -->
+              <path d="M424 96h-64V64c0-17.7-14.3-32-32-32H184c-17.7 0-32 14.3-32 32v32H88c-13.3 0-24 10.7-24 24v224c0 79.5 64.5 144 144 144h96c79.5 0 144-64.5 144-144V120c0-13.3-10.7-24-24-24zM160 320c0-53 43-96 96-96s96 43 96 96v48c0 26.5-21.5 48-48 48s-48-21.5-48-48v-48c0-13.3-10.7-24-24-24s-24 10.7-24 24v48c0 26.5-21.5 48-48 48s-48-21.5-48-48v-48z"/>
+            </svg>
+            Collectors
+          </button>
+        </div>
+
+        <!-- RESULTS COMPARISON PANEL -->
+        <div class="results-grid">
+          
+          <!-- Miner Results Card -->
+          <div class="result-card miner-card active-target" id="miner-card">
+            <button class="copy-btn" id="copy-miner-btn" title="Copy Miner Count">
+              <svg viewBox="0 0 24 24" class="copy-icon">
+                <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+              </svg>
+            </button>
+            <div class="result-card-header">
+              <span class="result-title">
+                <svg viewBox="0 0 512 512">
+                  <path d="M472.4 72c-11.3-11.3-28.2-13.7-42.4-7.2L382.9 83.4c-9 4.1-15.6 11.8-18 21.1L351.1 157c-2 7.7.3 15.9 6.1 21.6l46.2 46.2c5.7 5.7 13.9 8 21.6 6.1l52.5-13.8c9.3-2.4 17-9 21.1-18l18.6-47.1c6.5-14.2 4-31.1-7.3-42.4L472.4 72zM251.6 288.4L24 512h27.3L277 259l-25.4-20.6z"/>
+                </svg>
+                Miners (262.5K)
+              </span>
+              <span class="target-badge">Selected</span>
+            </div>
+            <div class="result-value-container">
+              <div class="result-value zero" id="miner-result">0</div>
+              <div class="result-suffix-note" id="miner-result-suffix">0 units</div>
+            </div>
+            <div class="result-divider"></div>
+            <div class="remainder-row">
+              <span class="remainder-label">Leftover Capital</span>
+              <span class="remainder-value" id="miner-remainder">$0</span>
+            </div>
+          </div>
+
+          <!-- Collector Results Card -->
+          <div class="result-card collector-card" id="collector-card">
+            <button class="copy-btn" id="copy-collector-btn" title="Copy Collector Count">
+              <svg viewBox="0 0 24 24" class="copy-icon">
+                <path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/>
+              </svg>
+            </button>
+            <div class="result-card-header">
+              <span class="result-title">
+                <svg viewBox="0 0 512 512">
+                  <path d="M424 96h-64V64c0-17.7-14.3-32-32-32H184c-17.7 0-32 14.3-32 32v32H88c-13.3 0-24 10.7-24 24v224c0 79.5 64.5 144 144 144h96c79.5 0 144-64.5 144-144V120c0-13.3-10.7-24-24-24zM160 320c0-53 43-96 96-96s96 43 96 96v48c0 26.5-21.5 48-48 48s-48-21.5-48-48v-48c0-13.3-10.7-24-24-24s-24 10.7-24 24v48c0 26.5-21.5 48-48 48s-48-21.5-48-48v-48z"/>
+                </svg>
+                Collectors (161.5K)
+              </span>
+              <span class="target-badge">Selected</span>
+            </div>
+            <div class="result-value-container">
+              <div class="result-value zero" id="collector-result">0</div>
+              <div class="result-suffix-note" id="collector-result-suffix">0 units</div>
+            </div>
+            <div class="result-divider"></div>
+            <div class="remainder-row">
+              <span class="remainder-label">Leftover Capital</span>
+              <span class="remainder-value" id="collector-remainder">$0</span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- INSTRUCTIONS ACCORDION CARD -->
+      <div class="glass-card accordion-card">
+        <button class="accordion-header" id="accordion-toggle" aria-expanded="false">
+          <span class="accordion-title">
+            <!-- Information SVG icon -->
+            <svg viewBox="0 0 24 24">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
+            </svg>
+            Notation Guide & Suffix Reference
+          </span>
+          <svg class="accordion-trigger" viewBox="0 0 24 24" id="accordion-arrow">
+            <path d="M7 10l5 5 5-5H7z"/>
+          </svg>
+        </button>
+        <div class="accordion-content" id="accordion-content">
+          <div class="accordion-content-inner">
+            <p>
+              This calculator features an adaptive arbitrary-precision parser. It handles standard integers, floats with suffixes, double-letter alphabetical abbreviations (common in incremental settings), and raw exponential inputs.
+            </p>
+            <div class="accordion-grid">
+              <div class="accordion-item">
+                <h4>Format Examples</h4>
+                <ul id="examples-list">
+                  <li data-val="15400000000000000000"><span class="lbl">Raw Digits:</span> <span class="val">1.54e19</span></li>
+                  <li data-val="1.54M"><span class="lbl">Suffixes:</span> <span class="val">1.54 Million</span></li>
+                  <li data-val="e400"><span class="lbl">Scientific:</span> <span class="val">1e400 (exponents)</span></li>
+                  <li data-val="2.56ab"><span class="lbl">Alphabetical:</span> <span class="val">2.56ab (10^18)</span></li>
+                  <li data-val="250000"><span class="lbl">Standard:</span> <span class="val">250,000</span></li>
+                </ul>
+              </div>
+              <div class="accordion-item">
+                <h4>Suffix Presets Table</h4>
+                <ul style="max-height: 160px; overflow-y: auto;">
+                  <li data-val="1K"><span class="lbl">K</span> <span class="val">Thousand (10^3)</span></li>
+                  <li data-val="1M"><span class="lbl">M</span> <span class="val">Million (10^6)</span></li>
+                  <li data-val="1B"><span class="lbl">B</span> <span class="val">Billion (10^9)</span></li>
+                  <li data-val="1T"><span class="lbl">T</span> <span class="val">Trillion (10^12)</span></li>
+                  <li data-val="1Qa"><span class="lbl">Qa</span> <span class="val">Quadrillion (10^15 / aa)</span></li>
+                  <li data-val="1Qi"><span class="lbl">Qi</span> <span class="val">Quintillion (10^18 / ab)</span></li>
+                  <li data-val="1Sx"><span class="lbl">Sx</span> <span class="val">Sextillion (10^21 / ac)</span></li>
+                  <li data-val="1Sp"><span class="lbl">Sp</span> <span class="val">Septillion (10^24 / ad)</span></li>
+                  <li data-val="1Oc"><span class="lbl">Oc</span> <span class="val">Octillion (10^27 / ae)</span></li>
+                  <li data-val="1No"><span class="lbl">No</span> <span class="val">Nonillion (10^30 / af)</span></li>
+                  <li data-val="1Dc"><span class="lbl">Dc</span> <span class="val">Decillion (10^33 / ag)</span></li>
+                  <li data-val="1UDc"><span class="lbl">UDc</span> <span class="val">Undecillion (10^36 / ah)</span></li>
+                  <li data-val="1DDc"><span class="lbl">DDc</span> <span class="val">Duodecillion (10^39 / ai)</span></li>
+                  <li data-val="1TDc"><span class="lbl">TDc</span> <span class="val">Tredecillion (10^42 / aj)</span></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- FOOTER AND DIAGNOSTICS -->
+    <div class="system-footer">
+      <div class="footer-links">
+        <span>Coal LLC Calculator v1.0.0</span>
+        <span>•</span>
+        <button class="footer-link-btn" id="diagnostics-toggle">Diagnostics Console</button>
+      </div>
+
+      <!-- Live Diagnostics Panel -->
+      <div class="diagnostic-panel" id="diagnostic-panel">
+        <div class="diagnostic-header">
+          <span>Engine Test Suite</span>
+          <span id="test-summary">OK (0/0)</span>
+        </div>
+        <div class="diagnostic-tests" id="diagnostic-tests">
+          <!-- Populated by JS on load -->
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div class="toast" id="toast">
+    <svg viewBox="0 0 24 24">
+      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+    </svg>
+    <span id="toast-message">Copied to clipboard!</span>
+  </div>
+
+  <!-- ===============================================================
+       JAVASCRIPT CALCULATOR CORE ENGINE
+       =============================================================== -->
+  <script>
+    // -------------------------------------------------------------
+    // Constants & Configuration
+    // -------------------------------------------------------------
+    const MINER_COST = 262500n;
+    const COLLECTOR_COST = 161500n;
+
+    // Suffix map matching UI presets and parser
+    const SUFFIX_MAP = {
+      'k': 3, 'm': 6, 'b': 9, 't': 12, 'qa': 15, 'qi': 18, 'sx': 21, 'sp': 24, 'oc': 27, 'no': 30, 'dc': 33,
+      'udc': 36, 'ddc': 39, 'tdc': 42, 'qadc': 45, 'qidc': 48, 'sxdc': 51, 'spdc': 54, 'ocdc': 57, 'nodc': 60,
+      'vg': 63, 'uvg': 66, 'dvg': 69, 'tvg': 72, 'qavg': 75, 'qivg': 78, 'sxvg': 81, 'spvg': 84, 'ocvg': 87, 'novg': 90,
+      'tg': 93, 'utg': 96, 'dtg': 99, 'ttg': 102, 'qatg': 105, 'qitg': 108, 'sxtg': 111, 'sptg': 114, 'octg': 117, 'notg': 120,
+      'qd': 123, 'thousand': 3, 'million': 6, 'billion': 9, 'trillion': 12, 'quadrillion': 15,
+      'quintillion': 18, 'sextillion': 21, 'septillion': 24, 'octillion': 27, 'nonillion': 30, 'decillion': 33
+    };
+
+    // Array of suffixes for rendering output formatted numbers
+    const SUFFIXES = [
+      "", "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc",
+      "UDc", "DDc", "TDc", "QaDc", "QiDc", "SxDc", "SpDc", "OcDc", "NoDc",
+      "Vg", "UVg", "DVg", "TVg", "QaVg", "QiVg", "SxVg", "SpVg", "OcVg", "NoVg",
+      "Tg", "UTg", "DTg", "TTg", "QaTg", "QiTg", "SxTg", "SpTg", "OcTg", "NoTg",
+      "Qd"
+    ];
+
+    // Presets to display in the quick-preset panel
+    const PRESETS_TO_RENDER = ["K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc", "UDc", "DDc", "TDc", "e"];
+
+    // -------------------------------------------------------------
+    // Mathematical & Parser Functions (Arbitrary Precision)
+    // -------------------------------------------------------------
+    
+    /**
+     * Decodes 2-letter alphabetical suffixes like "aa", "ab", etc.
+     * Starts at 10^15 (aa = 15, ab = 18, etc.)
+     */
+    function getAlphabeticalExponent(suffix) {
+      if (!/^[a-z]{2}$/.test(suffix)) return null;
+      const first = suffix.charCodeAt(0) - 97; // 'a' = 0
+      const second = suffix.charCodeAt(1) - 97; // 'a' = 0
+      
+      const index = first * 26 + second;
+      return 15 + index * 3;
+    }
+
+    /**
+     * Look up suffix in standard map or fallback to alphabetical.
+     */
+    function lookupSuffixExponent(suffix) {
+      if (SUFFIX_MAP.hasOwnProperty(suffix)) {
+        return SUFFIX_MAP[suffix];
+      }
+      return getAlphabeticalExponent(suffix);
+    }
+
+    /**
+     * Encodes exponent back into alphabetical representation (e.g. 15 -> aa)
+     */
+    function getAlphabeticalSuffix(exponent) {
+      if (exponent < 15 || (exponent - 15) % 3 !== 0) return null;
+      const index = Math.floor((exponent - 15) / 3);
+      const first = Math.floor(index / 26);
+      const second = index % 26;
+      if (first >= 26) return null;
+      return String.fromCharCode(97 + first) + String.fromCharCode(97 + second);
+    }
+
+    /**
+     * Scales coefficient value by exponent, resolving decimals exactly.
+     * E.g. scaleDecimalToBigInt("1.53", 4) -> 153 * 10^(4-2) = 15300
+     */
+    function scaleDecimalToBigInt(valStr, exponent) {
+      const dotIndex = valStr.indexOf('.');
+      let integerPart = valStr;
+      let decimalPlaces = 0;
+      
+      if (dotIndex !== -1) {
+        const decPart = valStr.substring(dotIndex + 1);
+        integerPart = valStr.substring(0, dotIndex) + decPart;
+        decimalPlaces = decPart.length;
+      }
+      
+      // Strip leading zeros
+      integerPart = integerPart.replace(/^0+/, '');
+      if (integerPart === '') integerPart = '0';
+      
+      let finalExponent = exponent - decimalPlaces;
+      
+      if (finalExponent >= 0) {
+        return BigInt(integerPart) * (10n ** BigInt(finalExponent));
+      } else {
+        const divisor = 10n ** BigInt(-finalExponent);
+        return BigInt(integerPart) / divisor;
+      }
+    }
+
+    /**
+     * Core Parsing function. Takes any user string and returns a BigInt.
+     */
+    function parseToBigInt(inputStr) {
+      // Clear commas, trim, and set to lower
+      let cleaned = inputStr.trim().toLowerCase().replace(/,/g, '');
+      if (!cleaned) return 0n;
+
+      // Match scientific notation (e.g. "1.5e400" or "e400")
+      const sciMatch = cleaned.match(/^([0-9.]*)e\+?([0-9]+)$/);
+      if (sciMatch) {
+        let coeffStr = sciMatch[1];
+        let expStr = sciMatch[2];
+        if (coeffStr === "" || coeffStr === ".") coeffStr = "1";
+        let exponent = parseInt(expStr, 10);
+        return scaleDecimalToBigInt(coeffStr, exponent);
+      }
+
+      // Match number followed by alphabetical unit
+      const suffixMatch = cleaned.match(/^([0-9.]+)\s*([a-z]+)$/);
+      if (suffixMatch) {
+        const valStr = suffixMatch[1];
+        const suffix = suffixMatch[2];
+        const exponent = lookupSuffixExponent(suffix);
+        if (exponent !== null) {
+          return scaleDecimalToBigInt(valStr, exponent);
+        }
+      }
+
+      // Match raw numbers (only digits and decimal point)
+      const isNumeric = /^[0-9.]+$/.test(cleaned);
+      if (isNumeric) {
+        return scaleDecimalToBigInt(cleaned, 0);
+      }
+
+      throw new Error("Cannot parse formatting");
+    }
+
+    /**
+     * Formats a BigInt into a highly readable suffix or scientific string.
+     */
+    function formatBigInt(val) {
+      if (val < 0n) return "-" + formatBigInt(-val);
+      if (val === 0n) return "0";
+      
+      const str = val.toString();
+      const len = str.length;
+      
+      // Under 1 Million, use commas
+      if (val < 1000000n) {
+        return Number(val).toLocaleString('en-US');
+      }
+      
+      const groupIndex = Math.floor((len - 1) / 3);
+      
+      // If we have a named suffix, use it
+      if (groupIndex < SUFFIXES.length) {
+        const suffix = SUFFIXES[groupIndex];
+        const decimals = 2;
+        const groupExponent = groupIndex * 3;
+        const divisor = 10n ** BigInt(groupExponent - decimals);
+        const scaled = val / divisor;
+        
+        const scaledStr = scaled.toString();
+        const coefLen = scaledStr.length;
+        const dotPos = coefLen - decimals;
+        const intPart = scaledStr.substring(0, dotPos);
+        const decPart = scaledStr.substring(dotPos);
+        
+        if (decPart === "00") {
+          return `${intPart} ${suffix}`;
+        } else if (decPart[1] === "0") {
+          return `${intPart}.${decPart[0]} ${suffix}`;
+        } else {
+          return `${intPart}.${decPart} ${suffix}`;
+        }
+      } 
+      
+      // Fallback: Check if we can write as alphabetical double-letter (aa-zz)
+      const groupExponent = groupIndex * 3;
+      const alphaSuffix = getAlphabeticalSuffix(groupExponent);
+      if (alphaSuffix) {
+        const decimals = 2;
+        const divisor = 10n ** BigInt(groupExponent - decimals);
+        const scaled = val / divisor;
+        const scaledStr = scaled.toString();
+        const coefLen = scaledStr.length;
+        const dotPos = coefLen - decimals;
+        const intPart = scaledStr.substring(0, dotPos);
+        const decPart = scaledStr.substring(dotPos);
+        
+        if (decPart === "00") {
+          return `${intPart} ${alphaSuffix}`;
+        } else if (decPart[1] === "0") {
+          return `${intPart}.${decPart[0]} ${alphaSuffix}`;
+        } else {
+          return `${intPart}.${decPart} ${alphaSuffix}`;
+        }
+      }
+
+      // Otherwise, fallback to clean scientific notation
+      const exponent = len - 1;
+      const firstDigit = str[0];
+      const nextTwo = str.substring(1, 3);
+      
+      if (nextTwo === "00") {
+        return `${firstDigit}e${exponent}`;
+      } else if (nextTwo[1] === "0") {
+        return `${firstDigit}.${nextTwo[0]}e${exponent}`;
+      } else {
+        return `${firstDigit}.${nextTwo}e${exponent}`;
+      }
+    }
+
+    // -------------------------------------------------------------
+    // UI Interaction & State Management
+    // -------------------------------------------------------------
+    let currentMode = 'miner'; // 'miner' or 'collector'
+    let currentCapital = 0n;
+
+    // Elements
+    const moneyInput = document.getElementById('money-input');
+    const parserFeedback = document.getElementById('parser-feedback');
+    const parsedValueEl = document.getElementById('parsed-value');
+    
+    const tabMiner = document.getElementById('tab-miner');
+    const tabCollector = document.getElementById('tab-collector');
+    const costBadge = document.getElementById('cost-badge');
+    const ambientGlow = document.getElementById('ambient-glow');
+    const headerLogo = document.getElementById('header-logo');
+    
+    const minerCard = document.getElementById('miner-card');
+    const collectorCard = document.getElementById('collector-card');
+    
+    const minerResultEl = document.getElementById('miner-result');
+    const minerSuffixEl = document.getElementById('miner-result-suffix');
+    const minerRemainderEl = document.getElementById('miner-remainder');
+    
+    const collectorResultEl = document.getElementById('collector-result');
+    const collectorSuffixEl = document.getElementById('collector-result-suffix');
+    const collectorRemainderEl = document.getElementById('collector-remainder');
+    
+    const presetsGrid = document.getElementById('presets-grid');
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toast-message');
+
+    // Accordion Elements
+    const accordionToggle = document.getElementById('accordion-toggle');
+    const accordionContent = document.getElementById('accordion-content');
+    
+    // Diagnostics Elements
+    const diagnosticsToggle = document.getElementById('diagnostics-toggle');
+    const diagnosticPanel = document.getElementById('diagnostic-panel');
+    const diagnosticTests = document.getElementById('diagnostic-tests');
+    const testSummary = document.getElementById('test-summary');
+
+    /**
+     * Initializes state, presets, and updates visuals.
+     */
+    function init() {
+      // 1. Render Preset Buttons
+      presetsGrid.innerHTML = '';
+      PRESETS_TO_RENDER.forEach(preset => {
+        const btn = document.createElement('button');
+        btn.className = 'preset-btn';
+        if (preset === 'e') {
+          btn.classList.add('highlight');
+          btn.innerText = 'e (Scientific)';
+          btn.addEventListener('click', applyExponentHelper);
+        } else {
+          btn.innerText = preset;
+          btn.addEventListener('click', () => applySuffix(preset));
+        }
+        presetsGrid.appendChild(btn);
+      });
+
+      // 2. Load LocalStorage State
+      const savedMode = localStorage.getItem('coal_calc_mode');
+      if (savedMode === 'collector') {
+        setMode('collector');
+      } else {
+        setMode('miner');
+      }
+
+      const savedInput = localStorage.getItem('coal_calc_input');
+      if (savedInput) {
+        moneyInput.value = savedInput;
+      }
+
+      // 3. Bind Event Listeners
+      moneyInput.addEventListener('input', () => {
+        localStorage.setItem('coal_calc_input', moneyInput.value);
+        updateCalculations();
+      });
+
+      tabMiner.addEventListener('click', () => setMode('miner'));
+      tabCollector.addEventListener('click', () => setMode('collector'));
+      
+      // Bind click on examples in accordion
+      document.querySelectorAll('#examples-list li').forEach(item => {
+        item.addEventListener('click', () => {
+          moneyInput.value = item.getAttribute('data-val') || '';
+          localStorage.setItem('coal_calc_input', moneyInput.value);
+          updateCalculations();
+          moneyInput.focus();
+        });
+      });
+
+      document.querySelectorAll('.accordion-item li[data-val]').forEach(item => {
+        item.addEventListener('click', () => {
+          moneyInput.value = item.getAttribute('data-val') || '';
+          localStorage.setItem('coal_calc_input', moneyInput.value);
+          updateCalculations();
+          moneyInput.focus();
+        });
+      });
+
+      // Accordion Toggle
+      accordionToggle.addEventListener('click', toggleAccordion);
+
+      // Copy Clipboard Bindings
+      document.getElementById('copy-miner-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        copyResultToClipboard('miner');
+      });
+      document.getElementById('copy-collector-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        copyResultToClipboard('collector');
+      });
+
+      // Diagnostics Toggle
+      diagnosticsToggle.addEventListener('click', toggleDiagnostics);
+
+      // 4. Run calculations initial tick
+      updateCalculations();
+      
+      // 5. Run tests inside diagnostics console quietly
+      runDiagnostics();
+    }
+
+    /**
+     * Updates active calculation results based on text input.
+     */
+    function updateCalculations() {
+      const text = moneyInput.value;
+      
+      try {
+        currentCapital = parseToBigInt(text);
+        
+        // Remove error states
+        parserFeedback.classList.remove('error');
+        
+        // Format parsed label
+        if (currentCapital === 0n && text.trim() === "") {
+          parsedValueEl.innerText = "0";
+        } else {
+          parsedValueEl.innerText = `${formatBigInt(currentCapital)} (${currentCapital.toString()})`;
+        }
+        
+        // Calculate counts
+        const minerCount = currentCapital / MINER_COST;
+        const minerRemainder = currentCapital % MINER_COST;
+        
+        const collectorCount = currentCapital / COLLECTOR_COST;
+        const collectorRemainder = currentCapital % COLLECTOR_COST;
+
+        // Render Miner Results
+        renderResult(minerResultEl, minerSuffixEl, minerRemainderEl, minerCount, minerRemainder);
+        
+        // Render Collector Results
+        renderResult(collectorResultEl, collectorSuffixEl, collectorRemainderEl, collectorCount, collectorRemainder);
+        
+      } catch (err) {
+        parserFeedback.classList.add('error');
+        parsedValueEl.innerText = "Invalid number format (Check guidelines)";
+        
+        // Reset results to zero on error
+        resetResultsToZero();
+      }
+    }
+
+    /**
+     * Helper to render count and remainder in the cards.
+     */
+    function renderResult(valueEl, suffixEl, remainderEl, count, remainder) {
+      if (count === 0n) {
+        valueEl.innerText = "0";
+        valueEl.classList.add('zero');
+        suffixEl.innerText = "0 units";
+      } else {
+        valueEl.innerText = formatBigInt(count);
+        valueEl.classList.remove('zero');
+        
+        // Detailed suffix/scientific description
+        if (count >= 1000n) {
+          suffixEl.innerText = `${count.toString()} units`;
+        } else {
+          suffixEl.innerText = `${count.toString()} unit${count === 1n ? '' : 's'}`;
+        }
+      }
+      
+      remainderEl.innerText = `$${formatBigInt(remainder)}`;
+    }
+
+    /**
+     * Clears result elements back to 0.
+     */
+    function resetResultsToZero() {
+      minerResultEl.innerText = "0";
+      minerResultEl.classList.add('zero');
+      minerSuffixEl.innerText = "0 units";
+      minerRemainderEl.innerText = "$0";
+
+      collectorResultEl.innerText = "0";
+      collectorResultEl.classList.add('zero');
+      collectorSuffixEl.innerText = "0 units";
+      collectorRemainderEl.innerText = "$0";
+    }
+
+    /**
+     * Toggles mode between miner and collector.
+     */
+    function setMode(mode) {
+      currentMode = mode;
+      localStorage.setItem('coal_calc_mode', mode);
+
+      if (mode === 'miner') {
+        document.body.classList.remove('theme-collector');
+        document.body.classList.add('theme-miner');
+        
+        tabMiner.classList.add('active');
+        tabCollector.classList.remove('active');
+        
+        minerCard.classList.add('active-target');
+        collectorCard.classList.remove('active-target');
+        
+        costBadge.innerText = "Miner Cost: 262,500";
+        
+        // Replace logo paths (Pickaxe)
+        headerLogo.innerHTML = '<path d="M472.4 72c-11.3-11.3-28.2-13.7-42.4-7.2L382.9 83.4c-9 4.1-15.6 11.8-18 21.1L351.1 157c-2 7.7.3 15.9 6.1 21.6l46.2 46.2c5.7 5.7 13.9 8 21.6 6.1l52.5-13.8c9.3-2.4 17-9 21.1-18l18.6-47.1c6.5-14.2 4-31.1-7.3-42.4L472.4 72zM251.6 288.4L24 512h27.3L277 259l-25.4-20.6z"/>';
+      } else {
+        document.body.classList.remove('theme-miner');
+        document.body.classList.add('theme-collector');
+        
+        tabCollector.classList.add('active');
+        tabMiner.classList.remove('active');
+        
+        collectorCard.classList.add('active-target');
+        minerCard.classList.remove('active-target');
+        
+        costBadge.innerText = "Collector Cost: 161,500";
+        
+        // Replace logo paths (Magnet)
+        headerLogo.innerHTML = '<path d="M424 96h-64V64c0-17.7-14.3-32-32-32H184c-17.7 0-32 14.3-32 32v32H88c-13.3 0-24 10.7-24 24v224c0 79.5 64.5 144 144 144h96c79.5 0 144-64.5 144-144V120c0-13.3-10.7-24-24-24zM160 320c0-53 43-96 96-96s96 43 96 96v48c0 26.5-21.5 48-48 48s-48-21.5-48-48v-48c0-13.3-10.7-24-24-24s-24 10.7-24 24v48c0 26.5-21.5 48-48 48s-48-21.5-48-48v-48z"/>';
+      }
+      
+      // Update highlight presets
+      updatePresetHighlights();
+    }
+
+    /**
+     * Highlights presets depending on theme mode.
+     */
+    function updatePresetHighlights() {
+      // Re-trigger styles to sync custom properties
+    }
+
+    /**
+     * Appends suffix to input coefficient.
+     */
+    function applySuffix(suffix) {
+      let val = moneyInput.value.trim();
+      
+      if (val === '') {
+        moneyInput.value = '1' + suffix;
+      } else {
+        // Strip existing alphabetical suffix or scientific trailing
+        const match = val.match(/^([0-9.,]+)/);
+        if (match) {
+          // Keep base number, discard past suffix
+          moneyInput.value = match[1] + suffix;
+        } else {
+          moneyInput.value = '1' + suffix;
+        }
+      }
+      
+      localStorage.setItem('coal_calc_input', moneyInput.value);
+      updateCalculations();
+      moneyInput.focus();
+    }
+
+    /**
+     * Appends exponent helper token.
+     */
+    function applyExponentHelper() {
+      let val = moneyInput.value.trim();
+      
+      if (val === '') {
+        moneyInput.value = '1e';
+      } else {
+        const match = moneyInput.value.match(/^([0-9.,]+)/);
+        if (match) {
+          moneyInput.value = match[1] + 'e';
+        } else {
+          moneyInput.value = '1e';
+        }
+      }
+      
+      localStorage.setItem('coal_calc_input', moneyInput.value);
+      updateCalculations();
+      moneyInput.focus();
+    }
+
+    /**
+     * Toggle the guide accordion.
+     */
+    function toggleAccordion() {
+      const expanded = accordionToggle.getAttribute('aria-expanded') === 'true';
+      accordionToggle.setAttribute('aria-expanded', !expanded);
+      accordionContent.classList.toggle('expanded');
+    }
+
+    /**
+     * Show / Hide Diagnostics panel.
+     */
+    function toggleDiagnostics() {
+      diagnosticPanel.classList.toggle('visible');
+      if (diagnosticPanel.classList.contains('visible')) {
+        diagnosticPanel.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    /**
+     * Copies the calculated equipment result to clipboard.
+     */
+    function copyResultToClipboard(type) {
+      let textToCopy = "";
+      let btn = null;
+
+      if (type === 'miner') {
+        textToCopy = (currentCapital / MINER_COST).toString();
+        btn = document.getElementById('copy-miner-btn');
+      } else {
+        textToCopy = (currentCapital / COLLECTOR_COST).toString();
+        btn = document.getElementById('copy-collector-btn');
+      }
+
+      if (textToCopy === "0") {
+        showToast("Cannot copy zero!", "error");
+        return;
+      }
+
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        showToast(`Copied ${type === 'miner' ? 'Miner' : 'Collector'} count to clipboard!`);
+        
+        // Add visual success class to button briefly
+        btn.classList.add('success');
+        setTimeout(() => {
+          btn.classList.remove('success');
+        }, 1500);
+      }).catch(err => {
+        showToast("Failed to copy", "error");
+      });
+    }
+
+    /**
+     * Toast notifications
+     */
+    function showToast(message, type = "success") {
+      toastMessage.innerText = message;
+      toast.className = 'toast';
+      if (type === 'error') {
+        toast.style.borderLeftColor = 'hsl(0, 85%, 60%)';
+        toast.querySelector('svg').style.fill = 'hsl(0, 85%, 60%)';
+      } else {
+        toast.style.borderLeftColor = '#28c76f';
+        toast.querySelector('svg').style.fill = '#28c76f';
+      }
+      toast.classList.add('visible');
+      
+      setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 2500);
+    }
+
+    // -------------------------------------------------------------
+    // Integrated Diagnostic Tests
+    // -------------------------------------------------------------
+    function runDiagnostics() {
+      const tests = [
+        { input: "1500", expectedMiner: 0n, expectedCollector: 0n },
+        { input: "262500", expectedMiner: 1n, expectedCollector: 1n },
+        { input: "1M", expectedMiner: 3n, expectedCollector: 6n },
+        { input: "1.5M", expectedMiner: 5n, expectedCollector: 9n },
+        { input: "e6", expectedMiner: 3n, expectedCollector: 6n },
+        { input: "1e6", expectedMiner: 3n, expectedCollector: 6n },
+        { input: "2.625e5", expectedMiner: 1n, expectedCollector: 1n },
+        { input: "1.615e5", expectedMiner: 0n, expectedCollector: 1n },
+        { input: "2.625 million", expectedMiner: 10n, expectedCollector: 16n },
+        { input: "1.54aa", expectedMiner: 5866666666n, expectedCollector: 9535603715n },
+        { input: "1.54ab", expectedMiner: 5866666666666n, expectedCollector: 9535603715170n }
+      ];
+
+      diagnosticTests.innerHTML = '';
+      let passedCount = 0;
+
+      tests.forEach((t, i) => {
+        try {
+          const parsed = parseToBigInt(t.input);
+          const minerCalc = parsed / MINER_COST;
+          const collectorCalc = parsed / COLLECTOR_COST;
+
+          const minerPass = minerCalc === t.expectedMiner;
+          const collectorPass = collectorCalc === t.expectedCollector;
+          const isPass = minerPass && collectorPass;
+
+          if (isPass) passedCount++;
+
+          const row = document.createElement('div');
+          row.className = `diagnostic-test-item ${isPass ? 'pass' : 'fail'}`;
+          row.innerHTML = `
+            <span>Test #${i+1} ("${t.input}")</span>
+            <span>${isPass ? 'PASS' : 'FAIL'}</span>
+          `;
+          diagnosticTests.appendChild(row);
+        } catch (e) {
+          const row = document.createElement('div');
+          row.className = 'diagnostic-test-item fail';
+          row.innerHTML = `
+            <span>Test #${i+1} ("${t.input}")</span>
+            <span>ERROR: ${e.message}</span>
+          `;
+          diagnosticTests.appendChild(row);
+        }
+      });
+
+      testSummary.innerText = `OK (${passedCount}/${tests.length} Passed)`;
+      if (passedCount !== tests.length) {
+        testSummary.style.color = 'hsl(0, 85%, 60%)';
+      }
+    }
+
+    // Initialize the calculator page
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
