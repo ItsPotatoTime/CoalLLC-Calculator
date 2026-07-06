@@ -374,7 +374,8 @@
       font-size: 13px;
       color: var(--text-muted);
       display: flex;
-      align-items: center;
+      flex-wrap: wrap;
+      align-items: flex-start;
       gap: 8px;
       min-height: 20px;
     }
@@ -395,6 +396,7 @@
       font-family: var(--font-mono);
       font-weight: 500;
       color: #fff;
+      word-break: break-all;
     }
 
     /* -------------------------------------------------------------
@@ -495,6 +497,7 @@
       display: flex;
       flex-direction: column;
       position: relative;
+      cursor: pointer;
       transition: 
         border-color var(--transition-normal),
         box-shadow var(--transition-normal),
@@ -502,10 +505,24 @@
         background-color var(--transition-normal);
     }
 
+    .result-card:hover {
+      transform: translateY(-2px);
+      background-color: rgba(255, 255, 255, 0.01);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
     .result-card.active-target {
       background: rgba(var(--card-hue-color), 0.03);
       border-color: rgba(var(--card-theme-color), 0.25);
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3), inset 0 0 15px rgba(var(--card-theme-color), 0.05);
+    }
+
+    .result-card.active-target:hover {
+      background-color: rgba(var(--card-hue-color), 0.06);
+      border-color: rgba(var(--card-theme-color), 0.4);
+      box-shadow: 
+        0 12px 35px rgba(0, 0, 0, 0.4), 
+        inset 0 0 20px rgba(var(--card-theme-color), 0.08);
     }
 
     .result-card.miner-card {
@@ -523,6 +540,7 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 16px;
+      padding-right: 44px;
     }
 
     .result-title {
@@ -594,6 +612,8 @@
       color: var(--text-muted);
       margin-top: 4px;
       font-weight: 500;
+      word-wrap: break-word;
+      word-break: break-all;
     }
 
     .result-divider {
@@ -1502,6 +1522,24 @@
       document.getElementById('copy-collector-btn').addEventListener('click', (e) => {
         e.stopPropagation();
         copyResultToClipboard('collector');
+      });
+
+      // Card Click Event Listeners
+      minerCard.addEventListener('click', () => {
+        if (currentMode === 'miner') {
+          copyResultToClipboard('miner');
+        } else {
+          setMode('miner');
+          updateCalculations();
+        }
+      });
+      collectorCard.addEventListener('click', () => {
+        if (currentMode === 'collector') {
+          copyResultToClipboard('collector');
+        } else {
+          setMode('collector');
+          updateCalculations();
+        }
       });
 
       // Diagnostics Toggle
