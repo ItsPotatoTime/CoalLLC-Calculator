@@ -41,6 +41,13 @@
       --collector-glow: rgba(31, 211, 243, 0.4);
       --collector-bg-glow: rgba(31, 211, 243, 0.08);
 
+      /* Split Theme (Green) */
+      --split-hue: 140;
+      --split-color: hsl(var(--split-hue), 70%, 50%);
+      --split-color-hover: hsl(var(--split-hue), 70%, 58%);
+      --split-glow: rgba(72, 199, 111, 0.4);
+      --split-bg-glow: rgba(72, 199, 111, 0.08);
+
       /* Active Dynamic Variables (Controlled by JS/Classes) */
       --theme-hue: var(--miner-hue);
       --theme-color: var(--miner-color);
@@ -67,6 +74,15 @@
       --theme-color-hover: var(--collector-color-hover);
       --theme-glow: var(--collector-glow);
       --theme-bg-glow: var(--collector-bg-glow);
+    }
+
+    /* Target Split active styles */
+    .theme-split {
+      --theme-hue: var(--split-hue);
+      --theme-color: var(--split-color);
+      --theme-color-hover: var(--split-color-hover);
+      --theme-glow: var(--split-glow);
+      --theme-bg-glow: var(--split-bg-glow);
     }
 
     /* -------------------------------------------------------------
@@ -461,7 +477,7 @@
       top: 6px;
       bottom: 6px;
       left: 6px;
-      width: calc(50% - 6px);
+      width: calc(33.333% - 4px);
       background: var(--theme-color);
       border-radius: 12px;
       transition: transform var(--transition-normal), background-color var(--transition-normal);
@@ -470,7 +486,112 @@
     }
 
     .theme-collector .tab-slider {
-      transform: translateX(100%);
+      transform: translateX(calc(100% + 12px));
+    }
+
+    .theme-split .tab-slider {
+      transform: translateX(calc(200% + 24px));
+    }
+
+    /* -------------------------------------------------------------
+       7b. SPLIT RATIO INPUT
+       ------------------------------------------------------------- */
+    .split-ratio-section {
+      display: none;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .split-ratio-section.visible {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .split-ratio-label {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .split-ratio-inputs {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .split-ratio-field {
+      width: 90px;
+      background: rgba(0, 0, 0, 0.45);
+      border: 2px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 20px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: #fff;
+      text-align: center;
+      outline: none;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+      -moz-appearance: textfield;
+    }
+
+    .split-ratio-field::-webkit-outer-spin-button,
+    .split-ratio-field::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .split-ratio-field:focus {
+      border-color: var(--theme-color);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.4), 0 0 12px var(--theme-bg-glow);
+    }
+
+    .split-ratio-field.miner-field:focus {
+      border-color: var(--miner-color);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.4), 0 0 12px var(--miner-bg-glow);
+    }
+
+    .split-ratio-field.collector-field:focus {
+      border-color: var(--collector-color);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.4), 0 0 12px var(--collector-bg-glow);
+    }
+
+    .split-ratio-colon {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+    }
+
+    .split-ratio-preview {
+      margin-top: 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-align: center;
+      font-family: var(--font-mono);
+    }
+
+    .split-ratio-preview .miner-pct {
+      color: var(--miner-color);
+    }
+
+    .split-ratio-preview .collector-pct {
+      color: var(--collector-color);
     }
 
     /* -------------------------------------------------------------
@@ -1045,6 +1166,26 @@
             </svg>
             Collectors
           </button>
+          <button class="tab-btn" id="tab-split">
+            <svg viewBox="0 0 24 24">
+              <!-- Split/divide icon -->
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm-1-13v6l4.24 2.54.76-1.27-3.5-2.08V7h-1.5z" style="display:none;"/>
+              <!-- Arrows split icon -->
+              <path d="M14 2l-4 4h3v5.17l-4.47 4.47-1.06-1.06L10.17 13H8v-1h3V7h-3L5.41 8.59 4 7.17l5-5h5zm-4 14v-5.17l4.47-4.47 1.06 1.06L11.83 13H16v1h-3v4h3l2.59-2.59L18 17.17l-5 5H9z"/>
+            </svg>
+            Split
+          </button>
+        </div>
+
+        <!-- SPLIT RATIO INPUT (Only visible in split mode) -->
+        <div class="split-ratio-section" id="split-ratio-section">
+          <div class="split-ratio-label">Miner : Collector</div>
+          <div class="split-ratio-inputs">
+            <input type="number" id="split-ratio-miner" class="split-ratio-field" value="1" min="0" placeholder="Miners">
+            <span class="split-ratio-colon">:</span>
+            <input type="number" id="split-ratio-collector" class="split-ratio-field" value="1" min="0" placeholder="Collectors">
+          </div>
+          <div class="split-ratio-preview" id="split-ratio-preview">50% Miners &bull; 50% Collectors</div>
         </div>
 
         <!-- RESULTS COMPARISON PANEL -->
@@ -1411,8 +1552,10 @@
     // -------------------------------------------------------------
     // UI Interaction & State Management
     // -------------------------------------------------------------
-    let currentMode = 'miner'; // 'miner' or 'collector'
+    let currentMode = 'miner'; // 'miner', 'collector', or 'split'
     let currentCapital = 0n;
+    let splitMinerRatio = 1;
+    let splitCollectorRatio = 1;
 
     // Elements
     const moneyInput = document.getElementById('money-input');
@@ -1421,6 +1564,11 @@
     
     const tabMiner = document.getElementById('tab-miner');
     const tabCollector = document.getElementById('tab-collector');
+    const tabSplit = document.getElementById('tab-split');
+    const splitRatioSection = document.getElementById('split-ratio-section');
+    const splitRatioMiner = document.getElementById('split-ratio-miner');
+    const splitRatioCollector = document.getElementById('split-ratio-collector');
+    const splitRatioPreview = document.getElementById('split-ratio-preview');
     const costBadge = document.getElementById('cost-badge');
     const ambientGlow = document.getElementById('ambient-glow');
     const headerLogo = document.getElementById('header-logo');
@@ -1474,6 +1622,8 @@
       const savedMode = localStorage.getItem('coal_calc_mode');
       if (savedMode === 'collector') {
         setMode('collector');
+      } else if (savedMode === 'split') {
+        setMode('split');
       } else {
         setMode('miner');
       }
@@ -1483,6 +1633,13 @@
         moneyInput.value = savedInput;
       }
 
+      // Load saved split ratio
+      const savedMinerRatio = localStorage.getItem('coal_split_miner');
+      const savedCollectorRatio = localStorage.getItem('coal_split_collector');
+      if (savedMinerRatio !== null) splitRatioMiner.value = savedMinerRatio;
+      if (savedCollectorRatio !== null) splitRatioCollector.value = savedCollectorRatio;
+      updateSplitPreview();
+
       // 3. Bind Event Listeners
       moneyInput.addEventListener('input', () => {
         localStorage.setItem('coal_calc_input', moneyInput.value);
@@ -1491,6 +1648,21 @@
 
       tabMiner.addEventListener('click', () => setMode('miner'));
       tabCollector.addEventListener('click', () => setMode('collector'));
+      tabSplit.addEventListener('click', () => setMode('split'));
+
+      // Split ratio input listeners
+      splitRatioMiner.addEventListener('input', () => {
+        splitMinerRatio = parseInt(splitRatioMiner.value) || 0;
+        localStorage.setItem('coal_split_miner', splitRatioMiner.value);
+        updateSplitPreview();
+        updateCalculations();
+      });
+      splitRatioCollector.addEventListener('input', () => {
+        splitCollectorRatio = parseInt(splitRatioCollector.value) || 0;
+        localStorage.setItem('coal_split_collector', splitRatioCollector.value);
+        updateSplitPreview();
+        updateCalculations();
+      });
       
       // Bind click on examples in accordion
       document.querySelectorAll('#examples-list li').forEach(item => {
@@ -1571,18 +1743,38 @@
           parsedValueEl.innerText = `${formatBigInt(currentCapital)} (${currentCapital.toString()})`;
         }
         
-        // Calculate counts
-        const minerCount = currentCapital / MINER_COST;
-        const minerRemainder = currentCapital % MINER_COST;
-        
-        const collectorCount = currentCapital / COLLECTOR_COST;
-        const collectorRemainder = currentCapital % COLLECTOR_COST;
+        if (currentMode === 'split') {
+          // Split mode: divide capital by ratio
+          const mRatio = parseInt(splitRatioMiner.value) || 0;
+          const cRatio = parseInt(splitRatioCollector.value) || 0;
+          const totalParts = BigInt(mRatio + cRatio);
 
-        // Render Miner Results
-        renderResult(minerResultEl, minerSuffixEl, minerRemainderEl, minerCount, minerRemainder);
-        
-        // Render Collector Results
-        renderResult(collectorResultEl, collectorSuffixEl, collectorRemainderEl, collectorCount, collectorRemainder);
+          let minerCapital = 0n;
+          let collectorCapital = 0n;
+
+          if (totalParts > 0n) {
+            minerCapital = (currentCapital * BigInt(mRatio)) / totalParts;
+            collectorCapital = currentCapital - minerCapital;
+          }
+
+          const minerCount = minerCapital / MINER_COST;
+          const minerRemainder = minerCapital % MINER_COST;
+          const collectorCount = collectorCapital / COLLECTOR_COST;
+          const collectorRemainder = collectorCapital % COLLECTOR_COST;
+
+          renderResult(minerResultEl, minerSuffixEl, minerRemainderEl, minerCount, minerRemainder);
+          renderResult(collectorResultEl, collectorSuffixEl, collectorRemainderEl, collectorCount, collectorRemainder);
+        } else {
+          // Single mode: calculate for selected target
+          const minerCount = currentCapital / MINER_COST;
+          const minerRemainder = currentCapital % MINER_COST;
+          
+          const collectorCount = currentCapital / COLLECTOR_COST;
+          const collectorRemainder = currentCapital % COLLECTOR_COST;
+
+          renderResult(minerResultEl, minerSuffixEl, minerRemainderEl, minerCount, minerRemainder);
+          renderResult(collectorResultEl, collectorSuffixEl, collectorRemainderEl, collectorCount, collectorRemainder);
+        }
         
       } catch (err) {
         parserFeedback.classList.add('error');
@@ -1638,38 +1830,57 @@
       currentMode = mode;
       localStorage.setItem('coal_calc_mode', mode);
 
+      // Reset classes
+      document.body.classList.remove('theme-collector', 'theme-split', 'theme-miner');
+      tabMiner.classList.remove('active');
+      tabCollector.classList.remove('active');
+      tabSplit.classList.remove('active');
+      minerCard.classList.remove('active-target');
+      collectorCard.classList.remove('active-target');
+      splitRatioSection.classList.remove('visible');
+
       if (mode === 'miner') {
-        document.body.classList.remove('theme-collector');
         document.body.classList.add('theme-miner');
-        
         tabMiner.classList.add('active');
-        tabCollector.classList.remove('active');
-        
         minerCard.classList.add('active-target');
-        collectorCard.classList.remove('active-target');
-        
         costBadge.innerText = "Miner Cost: 262,500";
-        
-        // Replace logo paths (Pickaxe)
         headerLogo.innerHTML = '<path d="M472.4 72c-11.3-11.3-28.2-13.7-42.4-7.2L382.9 83.4c-9 4.1-15.6 11.8-18 21.1L351.1 157c-2 7.7.3 15.9 6.1 21.6l46.2 46.2c5.7 5.7 13.9 8 21.6 6.1l52.5-13.8c9.3-2.4 17-9 21.1-18l18.6-47.1c6.5-14.2 4-31.1-7.3-42.4L472.4 72zM251.6 288.4L24 512h27.3L277 259l-25.4-20.6z"/>';
-      } else {
-        document.body.classList.remove('theme-miner');
+      } else if (mode === 'collector') {
         document.body.classList.add('theme-collector');
-        
         tabCollector.classList.add('active');
-        tabMiner.classList.remove('active');
-        
         collectorCard.classList.add('active-target');
-        minerCard.classList.remove('active-target');
-        
         costBadge.innerText = "Collector Cost: 161,500";
-        
-        // Replace logo paths (Magnet)
         headerLogo.innerHTML = '<path d="M424 96h-64V64c0-17.7-14.3-32-32-32H184c-17.7 0-32 14.3-32 32v32H88c-13.3 0-24 10.7-24 24v224c0 79.5 64.5 144 144 144h96c79.5 0 144-64.5 144-144V120c0-13.3-10.7-24-24-24zM160 320c0-53 43-96 96-96s96 43 96 96v48c0 26.5-21.5 48-48 48s-48-21.5-48-48v-48c0-13.3-10.7-24-24-24s-24 10.7-24 24v48c0 26.5-21.5 48-48 48s-48-21.5-48-48v-48z"/>';
+      } else if (mode === 'split') {
+        document.body.classList.add('theme-split');
+        tabSplit.classList.add('active');
+        splitRatioSection.classList.add('visible');
+        costBadge.innerText = "Split Mode";
+        // Use a combined icon for split
+        headerLogo.innerHTML = '<path d="M472.4 72c-11.3-11.3-28.2-13.7-42.4-7.2L382.9 83.4c-9 4.1-15.6 11.8-18 21.1L351.1 157c-2 7.7.3 15.9 6.1 21.6l46.2 46.2c5.7 5.7 13.9 8 21.6 6.1l52.5-13.8c9.3-2.4 17-9 21.1-18l18.6-47.1c6.5-14.2 4-31.1-7.3-42.4L472.4 72zM251.6 288.4L24 512h27.3L277 259l-25.4-20.6z"/>';
       }
       
-      // Update highlight presets
       updatePresetHighlights();
+      updateCalculations();
+    }
+
+    /**
+     * Updates the split ratio preview text showing percentages.
+     */
+    function updateSplitPreview() {
+      const mRatio = parseInt(splitRatioMiner.value) || 0;
+      const cRatio = parseInt(splitRatioCollector.value) || 0;
+      const total = mRatio + cRatio;
+
+      if (total === 0) {
+        splitRatioPreview.innerHTML = '<span class="miner-pct">0%</span> Miners &bull; <span class="collector-pct">0%</span> Collectors';
+        return;
+      }
+
+      const minerPct = ((mRatio / total) * 100).toFixed(1).replace(/\.0$/, '');
+      const collectorPct = ((cRatio / total) * 100).toFixed(1).replace(/\.0$/, '');
+
+      splitRatioPreview.innerHTML = `<span class="miner-pct">${minerPct}%</span> Miners &bull; <span class="collector-pct">${collectorPct}%</span> Collectors`;
     }
 
     /**
